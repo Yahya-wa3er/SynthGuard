@@ -1,0 +1,31 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Modèles et artifacts (trop lourds pour GitHub)
+models/
+artifacts/
+
+# Variables d'environnement
+.env
+frontend/.env
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Logs
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Docker volumes
+data/postgres/
+data/mongo/

@@ -1,0 +1,193 @@
+# ─────────────────────────────────────────────
+# SynthGuard Intelligence — Docker Compose
+# Services : PostgreSQL + MongoDB + Kafka +
+#            Zookeeper + API + Consumer
+# ─────────────────────────────────────────────
+
+version: '3.8'
+
+networks:
+  synthguard-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mongodb_data:
+  kafka_data:
+  zookeeper_data:
+
+services:
+
+  # ─────────────────────────────────────────
+  # PostgreSQL — Données d'entrainement
+  # ─────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: synthguard-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB:       ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - synthguard-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────
+  # MongoDB — Résultats de détection
+  # ─────────────────────────────────────────
+  mongodb:
+    image: mongo:7.0
+    container_name: synthguard-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_DB}
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - synthguard-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────
+  # Zookeeper — Gestionnaire Kafka
+  # ─────────────────────────────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: synthguard-zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME:   2000
+      ZOOKEEPER_LOG4J_ROOT_LOGLEVEL: WARN
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+    networks:
+      - synthguard-net
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────
+  # Kafka — Broker de streaming
+  # ─────────────────────────────────────────
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: synthguard-kafka
+    restart: unless-stopped
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID:                        1
+      KAFKA_ZOOKEEPER_CONNECT:                zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS:             PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP:   PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME:       PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE:        "true"
+      KAFKA_LOG4J_ROOT_LOGLEVEL:              WARN
+      KAFKA_LOG_RETENTION_HOURS:              168
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    ports:
+      - "9092:9092"    # acces depuis l'hote (localhost:29092)
+    networks:
+      - synthguard-net
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ─────────────────────────────────────────
+  # API FastAPI — Serveur principal
+  # ─────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: final
+    container_name: synthguard-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      KAFKA_BOOTSTRAP:  kafka:9092
+      MONGO_URI:        mongodb://mongodb:27017/
+      DATABASE_URL:     postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    volumes:
+      - ../models:/models:ro
+      - ../artifacts:/artifacts:ro
+    ports:
+      - "8000:8000"
+    networks:
+      - synthguard-net
+    command: uvicorn api.app_api:app --host 127.0.0.1 --port 8000
+
+  # ─────────────────────────────────────────
+  # Consumer Kafka — Détection temps réel
+  # ─────────────────────────────────────────
+  consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: final
+    container_name: synthguard-consumer
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+      MONGO_URI:       mongodb://mongodb:27017/
+    volumes:
+      - ../models:/models:ro
+      - ../artifacts:/artifacts:ro
+    networks:
+      - synthguard-net
+    command: python data/kafka_consumer_realtime.py
+
+  # ─────────────────────────────────────────
+  # Frontend React — Interface utilisateur
+  # ─────────────────────────────────────────
+  frontend:
+    image: node:20-alpine
+    container_name: synthguard-frontend
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "3000:3000"
+    networks:
+      - synthguard-net
+    environment:
+      VITE_API_URL: http://localhost:8000
+    command: sh -c "npm install && npm run dev -- --host 127.0.0.2"
+    depends_on:
+      - api

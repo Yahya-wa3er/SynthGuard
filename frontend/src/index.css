@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .input {
+    @apply w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white
+           focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-accent
+           transition placeholder-gray-300;
+  }
+  .btn {
+    @apply px-4 py-2 rounded-lg text-sm font-medium transition;
+  }
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-blue-900;
+  }
+  .btn-outline {
+    @apply btn border border-gray-200 text-gray-600 hover:bg-gray-50;
+  }
+  .card {
+    @apply bg-white rounded-xl border border-gray-100 shadow-sm;
+  }
+  .badge {
+    @apply px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+  .badge-low      { @apply bg-green-100  text-green-700;  }
+  .badge-moderate { @apply bg-amber-100  text-amber-700;  }
+  .badge-high     { @apply bg-orange-100 text-orange-700; }
+  .badge-critical { @apply bg-red-100    text-red-700;    }
+  .badge-normale  { @apply bg-green-100  text-green-700;  }
+  .badge-suspecte { @apply bg-amber-100  text-amber-700;  }
+  .badge-moderee  { @apply bg-orange-100 text-orange-700; }
+  .badge-critique { @apply bg-red-100    text-red-700;    }
+}
