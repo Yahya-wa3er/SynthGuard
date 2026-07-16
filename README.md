@@ -21,7 +21,7 @@
 
 ## 📋 Contexte
 
-SynthGuard Intelligence est une plateforme complète de **Due Diligence IA** développée dans le cadre d'un stage PFA (Projet de Fin d'Année) à l'**ENSA Fès** (juin — août 2026).
+SynthGuard Intelligence est une plateforme complète de **Due Diligence IA** développée dans le cadre d'un stage PFA (Projet de Fin d'Année) à **ELAVI** (juin — août 2026).
 
 **Problématique :** Dans le consulting B2B, les décisions critiques — signature de contrats, accords de crédit, audits de conformité — reposent sur des analyses manuelles lentes et coûteuses.
 
