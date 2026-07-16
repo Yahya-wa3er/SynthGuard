@@ -3,6 +3,13 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --teal       : #00B09B;
+    --teal-dark  : #008C7A;
+    --teal-light : #E6F7F5;
+    --teal-mid   : #B2E8E2;
+  }
+
   body {
     @apply bg-gray-50 text-gray-900;
     font-family: 'Inter', system-ui, sans-serif;
@@ -12,21 +19,32 @@
 @layer components {
   .input {
     @apply w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white
-           focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-accent
-           transition placeholder-gray-300;
+           focus:outline-none focus:ring-2 transition placeholder-gray-300;
+    focus-ring-color: var(--teal-mid);
+    --tw-ring-color: #B2E8E2;
   }
+  .input:focus {
+    border-color: var(--teal);
+  }
+
   .btn {
     @apply px-4 py-2 rounded-lg text-sm font-medium transition;
   }
   .btn-primary {
-    @apply btn bg-primary text-white hover:bg-blue-900;
+    @apply btn text-white font-semibold uppercase tracking-wide;
+    background-color: var(--teal);
+  }
+  .btn-primary:hover {
+    background-color: var(--teal-dark);
   }
   .btn-outline {
     @apply btn border border-gray-200 text-gray-600 hover:bg-gray-50;
   }
+
   .card {
     @apply bg-white rounded-xl border border-gray-100 shadow-sm;
   }
+
   .badge {
     @apply px-2.5 py-0.5 rounded-full text-xs font-semibold;
   }
@@ -38,4 +56,10 @@
   .badge-suspecte { @apply bg-amber-100  text-amber-700;  }
   .badge-moderee  { @apply bg-orange-100 text-orange-700; }
   .badge-critique { @apply bg-red-100    text-red-700;    }
+
+  /* Teal utility classes */
+  .bg-teal     { background-color: var(--teal); }
+  .bg-teal-lt  { background-color: var(--teal-light); }
+  .text-teal   { color: var(--teal); }
+  .border-teal { border-color: var(--teal); }
 }

@@ -890,15 +890,16 @@ async def generate_pdf(doc_id: str):
     risk_color = {"normale": C_GREEN, "suspecte": colors.orange,
                   "moderee": colors.orangered, "critique": C_RED}.get(risk, C_GRAY)
 
+    story.append(Spacer(1, 8))
     story.append(Paragraph(
         "<font color='#1e3a5f'><b>SynthGuard Intelligence</b></font>",
-        ParagraphStyle("title", fontSize=22, spaceAfter=4)
+        ParagraphStyle("title", fontSize=22, leading=28, spaceAfter=6)
     ))
     story.append(Paragraph(
         "Rapport d'Analyse IA — Due Diligence & Conformité B2B",
-        ParagraphStyle("subtitle", fontSize=11, textColor=C_GRAY, spaceAfter=12)
+        ParagraphStyle("subtitle", fontSize=11, textColor=C_GRAY, leading=16, spaceAfter=14)
     ))
-    story.append(HRFlowable(width="100%", thickness=2, color=C_ACCENT, spaceAfter=16))
+    story.append(HRFlowable(width="100%", thickness=2, color=C_ACCENT, spaceAfter=18))
 
     story.append(Paragraph("<b>Informations Générales</b>",
                             ParagraphStyle("h2", fontSize=13, textColor=C_PRIMARY, spaceAfter=8)))

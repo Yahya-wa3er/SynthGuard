@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { getStats, getHistory } from '../services/api'
-import { MessageCircle, X, Send, Loader, Bot, User, Minimize2 } from 'lucide-react'
+import { MessageCircle, X, Send, Loader, Bot, User, Minimize2, Maximize2 } from 'lucide-react'
 
 // ── Chargement du contexte Markdown ─────────────────────────────────────────
 import SYNTHGUARD_MD from '../../SYNTHGUARD_CONTEXT.md?raw'
@@ -60,14 +60,12 @@ function MessageBubble({ msg }) {
   const isUser = msg.role === 'user'
   return (
     <div className={`flex gap-2.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-      {/* Avatar */}
       <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5
         ${isUser ? 'bg-blue-600' : 'bg-gradient-to-br from-blue-800 to-blue-600'}`}>
         {isUser
           ? <User size={13} className="text-white" />
           : <Bot  size={13} className="text-white" />}
       </div>
-      {/* Bulle */}
       <div className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed
         ${isUser
           ? 'bg-blue-600 text-white rounded-tr-sm'
@@ -85,15 +83,16 @@ function MessageBubble({ msg }) {
 
 // ── Composant principal ───────────────────────────────────────────────────────
 export default function SynthGuardChat() {
-  const [open,     setOpen    ] = useState(false)
-  const [messages, setMessages] = useState([])
-  const [input,    setInput   ] = useState('')
-  const [loading,  setLoading ] = useState(false)
-  const [stats,    setStats   ] = useState(null)
-  const [docs,     setDocs    ] = useState([])
-  const [hasNew,   setHasNew  ] = useState(false)
-  const bottomRef  = useRef(null)
-  const inputRef   = useRef(null)
+  const [open,      setOpen     ] = useState(false)
+  const [expanded,  setExpanded ] = useState(false)
+  const [messages,  setMessages ] = useState([])
+  const [input,     setInput    ] = useState('')
+  const [loading,   setLoading  ] = useState(false)
+  const [stats,     setStats    ] = useState(null)
+  const [docs,      setDocs     ] = useState([])
+  const [hasNew,    setHasNew   ] = useState(false)
+  const bottomRef = useRef(null)
+  const inputRef  = useRef(null)
 
   // Charger le contexte dashboard au montage
   useEffect(() => {
@@ -142,15 +141,20 @@ export default function SynthGuardChat() {
     setLoading(true)
 
     try {
-      const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      // ── Appel API OpenRouter — Claude Sonnet 5 ──────────────────────
+      const OR_KEY = import.meta.env.VITE_OPENROUTER_API_KEY
+      const OR_URL = import.meta.env.VITE_OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1'
+
+      const response = await fetch(`${OR_URL}/chat/completions`, {
         method : 'POST',
         headers: {
           'Content-Type' : 'application/json',
-          'Authorization': `Bearer ${GROQ_KEY}`,
+          'Authorization': `Bearer ${OR_KEY}`,
+          'HTTP-Referer' : 'http://localhost:3000',
+          'X-Title'      : 'SynthGuard Intelligence',
         },
         body: JSON.stringify({
-          model      : 'openai/gpt-oss-120b',
+          model      : 'anthropic/claude-sonnet-5',
           max_tokens : 1000,
           temperature: 0.7,
           messages   : [
@@ -197,6 +201,17 @@ export default function SynthGuardChat() {
     setTimeout(() => setOpen(true), 10)
   }
 
+  const toggleExpand = () => setExpanded(e => !e)
+
+  // Dimensions selon le mode
+  const panelClass = expanded
+    ? 'fixed bottom-6 right-6 z-50 flex flex-col overflow-hidden rounded-2xl shadow-2xl border border-gray-100 bg-white'
+    : 'fixed bottom-24 right-6 z-50 flex flex-col overflow-hidden rounded-2xl shadow-2xl border border-gray-100 bg-white'
+
+  const panelStyle = expanded
+    ? { width: '680px', height: '80vh', maxHeight: '800px' }
+    : { width: '420px', height: '580px' }
+
   return (
     <>
       {/* ── Bouton flottant ─────────────────────────────────────────────── */}
@@ -211,7 +226,6 @@ export default function SynthGuardChat() {
         {open
           ? <X size={22} className="text-white" />
           : <MessageCircle size={22} className="text-white" />}
-        {/* Badge notification */}
         {hasNew && !open && (
           <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full
                            flex items-center justify-center text-white text-xs font-bold">
@@ -222,10 +236,7 @@ export default function SynthGuardChat() {
 
       {/* ── Panneau chat ────────────────────────────────────────────────── */}
       {open && (
-        <div className="fixed bottom-24 right-6 z-50 w-96 h-[560px]
-                        bg-white rounded-2xl shadow-2xl border border-gray-100
-                        flex flex-col overflow-hidden
-                        animate-in slide-in-from-bottom-4 duration-200">
+        <div className={panelClass} style={panelStyle}>
 
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-800 to-blue-700 px-4 py-3
@@ -238,19 +249,35 @@ export default function SynthGuardChat() {
                 <p className="text-sm font-semibold text-white">SynthGuard Assistant</p>
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                  <p className="text-xs text-blue-200">Expert IA · Données temps réel</p>
+                  <p className="text-xs text-blue-200">
+                    Claude Sonnet 5 · Données temps réel
+                  </p>
                 </div>
               </div>
             </div>
+
             <div className="flex items-center gap-1">
               <button onClick={clearChat}
-                className="p-1.5 rounded-lg hover:bg-white/10 transition text-blue-200
-                           hover:text-white text-xs">
+                className="p-1.5 rounded-lg hover:bg-white/10 transition
+                           text-blue-200 hover:text-white text-xs">
                 Effacer
               </button>
-              <button onClick={() => setOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-white/10 transition">
-                <Minimize2 size={15} className="text-blue-200" />
+              {/* Bouton Agrandir / Réduire */}
+              <button
+                onClick={toggleExpand}
+                title={expanded ? 'Réduire' : 'Agrandir'}
+                className="p-1.5 rounded-lg hover:bg-white/10 transition"
+              >
+                {expanded
+                  ? <Minimize2 size={15} className="text-blue-200" />
+                  : <Maximize2 size={15} className="text-blue-200" />}
+              </button>
+              {/* Bouton Fermer */}
+              <button
+                onClick={() => { setOpen(false); setExpanded(false) }}
+                className="p-1.5 rounded-lg hover:bg-white/10 transition"
+              >
+                <X size={15} className="text-blue-200" />
               </button>
             </div>
           </div>
@@ -282,7 +309,7 @@ export default function SynthGuardChat() {
             <div ref={bottomRef} />
           </div>
 
-          {/* Suggestions rapides — uniquement si conversation vide */}
+          {/* Suggestions rapides */}
           {messages.length <= 1 && !loading && (
             <div className="px-4 pb-2 flex-shrink-0">
               <p className="text-xs text-gray-400 mb-2">Suggestions :</p>
@@ -307,11 +334,11 @@ export default function SynthGuardChat() {
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKey}
                 placeholder="Posez une question sur les analyses..."
-                rows={1}
+                rows={expanded ? 2 : 1}
                 className="flex-1 resize-none rounded-xl border border-gray-200
                            px-3 py-2.5 text-sm text-gray-700 placeholder-gray-400
                            focus:outline-none focus:ring-2 focus:ring-blue-200
-                           focus:border-blue-400 transition max-h-24 overflow-y-auto"
+                           focus:border-blue-400 transition max-h-32 overflow-y-auto"
                 style={{ lineHeight: '1.4' }}
               />
               <button

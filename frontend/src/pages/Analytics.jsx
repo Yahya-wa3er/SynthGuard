@@ -27,18 +27,28 @@ const MODULE_COLORS = ['#2563eb','#7c3aed','#0891b2','#059669','#d97706']
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function buildTimelineData(docs) {
-  // Groupe les docs par heure (HH:MM tronqué à l'heure)
+  // Groupe les docs par tranche de 5 minutes, triés chronologiquement
   const buckets = {}
   docs.forEach(d => {
     if (!d.detected_at) return
-    const dt   = new Date(d.detected_at)
-    const key  = `${String(dt.getHours()).padStart(2,'0')}h${String(dt.getMinutes()).padStart(2,'0')}`
-    if (!buckets[key]) buckets[key] = { time: key, total: 0, anomalies: 0, normale: 0, suspecte: 0, moderee: 0, critique: 0 }
+    const dt      = new Date(d.detected_at)
+    const hh      = String(dt.getHours()).padStart(2, '0')
+    const mm      = String(Math.floor(dt.getMinutes() / 5) * 5).padStart(2, '0')
+    const key     = `${hh}:${mm}`
+    const sortKey = dt.getHours() * 60 + Math.floor(dt.getMinutes() / 5) * 5
+    if (!buckets[key]) buckets[key] = {
+      time: `${hh}h${mm}`, sortKey,
+      total: 0, anomalies: 0,
+      normale: 0, suspecte: 0, moderee: 0, critique: 0
+    }
     buckets[key].total++
     if (d.is_anomaly) buckets[key].anomalies++
     if (d.severity) buckets[key][d.severity] = (buckets[key][d.severity] || 0) + 1
   })
-  return Object.values(buckets).slice(-20) // 20 derniers buckets
+  // Trier par ordre chronologique croissant (gauche = ancien, droite = récent)
+  return Object.values(buckets)
+    .sort((a, b) => a.sortKey - b.sortKey)
+    .slice(-20)
 }
 
 function buildSectorRiskData(docs) {
