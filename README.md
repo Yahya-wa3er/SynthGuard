@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="frontend/src/assets/login-bg.jpg" alt="SynthGuard Intelligence" width="100%" style="border-radius: 12px; margin-bottom: 24px;" />
-
 # SynthGuard Intelligence
 
 **Plateforme de Due Diligence IA pour cabinets de consulting B2B**
@@ -16,8 +14,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docker.com)
 [![License](https://img.shields.io/badge/Licence-Académique-00B09B?style=flat-square)](/)
 
-**El Houti Tlemcani Yahya** · ENSA Fès · Génie Informatique · IA & Confiance Numérique · PFA 2026
-
+**El Houti Tlemcani Yahya** · ENSA Fès · 3IACN
 </div>
 
 ---
